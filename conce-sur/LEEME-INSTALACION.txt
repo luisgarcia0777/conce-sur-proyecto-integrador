@@ -13,7 +13,11 @@ Instalación en WAMP
 3. Abre http://localhost/phpmyadmin/.
 4. En la pestaña Importar, selecciona conce-sur/database/conce_sur.sql y ejecútalo. El script crea la base de datos conce_sur, la tabla productos y registros marcados como DEMO.
 5. Revisa conce-sur/config/database.php. La configuración inicial usa host 127.0.0.1, base conce_sur, usuario root y contraseña vacía (común en WAMP local; cambia si tu instalación usa otra).
-6. Abre http://localhost/conce-sur/pages/inventario.php.
+6. Si la base ya existe, haz primero una copia desde phpMyAdmin → Exportar.
+7. Importa conce-sur/database/actualizacion_conce_sur_compatible.sql. Este paso crea roles, usuarios y tablas complementarias sin eliminar productos/ventas/servicios existentes.
+8. Abre http://localhost/conce-sur/setup_admin.php y crea tu primer administrador con contraseña de al menos 12 caracteres. No hay credenciales predeterminadas; el asistente queda bloqueado al crear el primer usuario.
+9. Inicia sesión en http://localhost/conce-sur/login.php.
+10. Abre Inventario/Ventas/Servicios desde el menú según tu rol.
 7. Registra un producto con código único, actualiza la página y confirma que permanece. Prueba también buscar y filtrar.
 
 Evidencia real que debes capturar
@@ -25,7 +29,7 @@ D. Si ocurre error, captura el mensaje y corrige antes de afirmar que funciona.
 Notas académicas y técnicas
 - Esta entrega conecta el módulo de inventario a MySQL/MariaDB para una demostración local en WAMP. Si el documento del proyecto declara PostgreSQL/Laravel como arquitectura objetivo, no afirmes que esta implementación ya usa ese stack: documenta la diferencia como prototipo de validación o migra antes de la entrega si el docente exige estrictamente la tecnología objetivo.
 - Los cuatro registros de ejemplo están identificados con prefijo DEMO y observaciones de prueba. No representan inventario verificado de CONCE SUR.
-- No hay autenticación implementada. La etiqueta Administrador es solo visual; no es un control de acceso.
+- La nueva versión incorpora login, logout por POST con CSRF, cambio de contraseña, gestión administrativa de usuarios y controles de rol por página/operación. Debe probarse en WAMP; no se afirma que ya haya sido probado en el equipo del estudiante.
 - Eliminar borra el registro de la base de datos. Úsalo solo con datos de prueba mientras validas.
 - No subir credenciales de una base de datos real a un repositorio público.
 
@@ -46,7 +50,7 @@ PRUEBA RECOMENDADA
 LIMITACIONES ACTUALES
 - Cada venta registra un solo producto. Para una nota de venta con múltiples líneas hace falta separar cabecera de venta y detalle de venta.
 - Los datos del cliente se registran en cada venta; aún no hay un módulo Clientes normalizado.
-- No hay autenticación real de usuarios, comprobantes electrónicos SUNAT ni integración SUNAT.
+- La autenticación y los roles están incorporados en la versión actual del código, pero aún deben pasar la matriz de pruebas manuales en WAMP. No se incluyen comprobantes electrónicos ni integración SUNAT.
 - Esta versión usa PHP y MySQL/MariaDB para una implementación local en WAMP; no es todavía la arquitectura Laravel/PostgreSQL propuesta en el documento académico.
 
 
@@ -60,3 +64,29 @@ Si ya habías importado una versión anterior del SQL, importa de nuevo el archi
 VALIDACIÓN TÉCNICA REALIZADA AL PAQUETE
 --------------------------------------
 Se revisó la sintaxis de los archivos PHP modificados con php -l y los cuatro archivos principales (index.php, pages/inventario.php, pages/ventas.php y pages/servicios.php) no presentan errores de sintaxis en esa comprobación. Esto no sustituye ejecutar la aplicación en WAMP ni verificar conexión, estructura SQL, operaciones CRUD o stock con una base de datos real.
+
+
+AUTENTICACIÓN Y SEGURIDAD (VERSIÓN ACTUALIZADA)
+------------------------------------------------
+- Inicio de sesión en login.php mediante password_verify contra password_hash.
+- Primer usuario: setup_admin.php (solo cuando usuarios está vacía); no usa contraseña por defecto.
+- Roles del sistema interno: Administrador, Vendedor y Tecnico. “Cliente” es un registro de negocio, no un rol de acceso en esta versión.
+- Administrador: dashboard, inventario, ventas, servicios y gestión de usuarios.
+- Vendedor: dashboard, consulta de inventario y ventas; no puede crear/eliminar productos ni gestionar cuentas.
+- Técnico: dashboard y servicios; no puede acceder a ventas/inventario ni administrar usuarios.
+- Mi cuenta: el usuario puede cambiar su contraseña verificando la actual; el administrador puede restablecer contraseña de otros usuarios.
+- Las contraseñas se almacenan con password_hash() y se validan con password_verify(); se usan sesiones HttpOnly/SameSite, regeneración de ID al iniciar sesión, tokens CSRF y bloqueo temporal tras cinco intentos fallidos en la misma sesión.
+- El control de respaldo sigue siendo procedimental: exportar la base desde phpMyAdmin y comprobar restauración. No hay copia automática programada.
+- Para probar: crear administrador, hacer login, crear usuarios de cada rol y comprobar que una URL no permitida devuelve HTTP 403.
+
+
+GUÍA RÁPIDA DE PRUEBAS DE SEGURIDAD
+1. Abrir setup_admin.php con la tabla usuarios vacía y crear una cuenta de administrador.
+2. Iniciar sesión desde login.php con esas credenciales.
+3. En Usuarios, crear cuentas adicionales con rol Vendedor y Técnico.
+4. Cerrar sesión y entrar con Vendedor: debe ver Inventario y Ventas, pero no debe crear/eliminar productos ni abrir Usuarios o Servicios.
+5. Entrar con Técnico: debe poder abrir Servicios, pero no Ventas, Inventario ni Usuarios.
+6. En cada rol probar que escribir directamente una URL restringida devuelve Acceso denegado (HTTP 403).
+7. Probar contraseña errónea, cambio de contraseña, logout y que el acceso a una página privada redirija al login.
+8. Registrar una venta y verificar en phpMyAdmin que la operación se relaciona con el id_usuario autenticado.
+9. Completar PRUEBAS_MANUALES.md con fecha, resultado real y captura. No marcar aprobado sin ejecutar la prueba.

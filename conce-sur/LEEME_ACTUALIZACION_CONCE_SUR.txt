@@ -1,0 +1,42 @@
+ACTUALIZACION COMPATIBLE DE CONCE SUR
+
+Archivo: actualizacion_conce_sur_compatible.sql
+Entorno: WAMP / MySQL o MariaDB / phpMyAdmin
+
+ANTES DE EJECUTAR
+1. Abre phpMyAdmin.
+2. Selecciona la base `conce_sur`.
+3. Ve a Exportar y descarga un backup SQL.
+4. Confirma que existen las tablas `productos`, `ventas` y `servicios`.
+5. Abre la pestaña SQL o importa este archivo y ejecútalo sobre `conce_sur`.
+
+POR QUÉ ES COMPATIBLE CON EL PHP ACTUAL
+- No elimina, vacía ni recrea las tablas actuales.
+- Conserva productos.stock y productos.ubicacion como la fuente del stock.
+- Las columnas nuevas que se agregan a ventas/servicios son opcionales (NULL), por lo que los INSERT existentes pueden seguir funcionando.
+- Crea tablas de apoyo para clientes, roles/usuarios, categorías, estados y detalles.
+- Copia los registros existentes de ventas a detalle_ventas solo cuando aún no tienen detalle.
+- Añade triggers para mantener el detalle de ventas sincronizado con la tabla ventas, y para mapear categoría/estado en operaciones futuras.
+- No crea usuarios ni contraseñas predeterminados.
+
+DESPUÉS DE EJECUTAR
+1. Revisa si phpMyAdmin muestra error. Si falla, no ejecutes scripts alternativos ni borres tablas: guarda una captura del error.
+2. Comprueba que aparecen clientes, categorias, roles, usuarios, estados_servicio, detalle_ventas y detalle_servicios.
+3. Comprueba la vista `v_inventario_actual`.
+4. Registra una venta de prueba desde el sistema y confirma que se agregue una fila en ventas y otra correspondiente en detalle_ventas.
+5. Comprueba que el stock en productos disminuya una sola vez.
+
+LIMITES CONOCIDOS
+- La tabla usuarios y roles prepara el esquema, pero no implementa login ni permisos en el PHP actual.
+- Las nuevas relaciones id_cliente/id_usuario son opcionales; la aplicación actual aún no asigna id_usuario en cada operación.
+- detalle_servicios queda preparado para registrar repuestos utilizados, pero el formulario actual no llena ese detalle.
+- El script hace DDL, que MySQL/MariaDB puede confirmar parcialmente. Por eso es importante guardar backup antes de ejecutarlo.
+
+
+CONFIGURAR ACCESO AL SISTEMA
+1. Después de importar este script, abre http://localhost/conce-sur/setup_admin.php.
+2. Crea el primer administrador con una contraseña única de 12 caracteres o más.
+3. Inicia sesión en http://localhost/conce-sur/login.php.
+4. En el menú Usuarios, el administrador puede crear cuentas para Vendedor o Técnico, activar/desactivar y restablecer contraseñas.
+5. Prueba Mi cuenta para cambiar la contraseña del usuario conectado.
+No hay usuario ni contraseña predefinidos. El asistente inicial queda bloqueado cuando existe la primera cuenta.

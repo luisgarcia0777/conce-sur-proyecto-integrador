@@ -1,23 +1,32 @@
-# Pruebas manuales — CONCE SUR
+# Matriz de pruebas manuales — CONCE SUR
 
-> Este documento es una guía de ejecución. No está marcado como aprobado porque las pruebas deben hacerse en el WAMP del usuario con su propia base de datos.
+Ejecutar en WAMP después de importar `database/conce_sur.sql` y `database/actualizacion_conce_sur_compatible.sql`. Completar fecha, resultado y adjuntar capturas únicamente tras ejecutar cada prueba.
 
-| ID | Módulo | Prueba | Resultado esperado | Evidencia a capturar tras ejecutar |
-|---|---|---|---|---|
-| INV-01 | Inventario | Registrar producto de prueba con código único y stock 5. | Mensaje de confirmación y producto visible en la tabla. | Página de inventario y fila en phpMyAdmin. |
-| INV-02 | Inventario | Recargar la pantalla y buscar el código exacto. | El producto permanece y aparece en el resultado. | Resultado de búsqueda. |
-| INV-03 | Inventario | Filtrar por ubicación. | Solo se muestran los productos de esa ubicación. | Filtro aplicado. |
-| VEN-01 | Ventas | Vender 2 unidades del producto con stock 5. | Venta registrada y stock actualizado a 3. | Venta en historial, fila en `ventas` y stock en `productos`. |
-| VEN-02 | Ventas | Intentar vender 4 unidades si quedan 3. | Rechazo por stock insuficiente y ninguna venta parcial. | Mensaje de validación y verificación de BD. |
-| VEN-03 | Ventas | Registrar venta con campos obligatorios vacíos. | El navegador/servidor impide completar el registro. | Pantalla de validación. |
-| SRV-01 | Servicios | Registrar un servicio con cliente, equipo y descripción. | Genera código y aparece en historial como Pendiente. | Formulario e historial. |
-| SRV-02 | Servicios | Cambiar estado a En revisión y luego Finalizado. | Se actualiza el estado y se registra la fecha de cierre al finalizar. | Historial antes/después y fila en `servicios`. |
-| DASH-01 | Dashboard | Cambiar inventario/registrar venta/servicio y volver al panel. | Indicadores y tablas muestran los datos guardados. | Dashboard después de las operaciones. |
+| ID | Prueba | Resultado esperado | Estado / evidencia |
+|---|---|---|---|
+| AUTH-01 | Configurar primer administrador en `setup_admin.php` con tabla usuarios vacía | Se crea una cuenta admin; password_hash queda almacenado, no la contraseña original | Pendiente en WAMP |
+| AUTH-02 | Abrir Dashboard sin iniciar sesión | Redirección a `login.php` | Pendiente en WAMP |
+| AUTH-03 | Iniciar sesión con contraseña correcta | Se crea sesión y se abre Dashboard | Pendiente en WAMP |
+| AUTH-04 | Iniciar sesión con contraseña incorrecta | Mensaje genérico; no se revela si usuario existe | Pendiente en WAMP |
+| AUTH-05 | Hacer cinco intentos fallidos en la misma sesión | Bloqueo temporal de un minuto | Pendiente en WAMP |
+| AUTH-06 | Administrador crea cuenta Vendedor/Técnico | Usuario aparece en lista y hash se guarda en DB | Pendiente en WAMP |
+| AUTH-07 | Vendedor intenta abrir `pages/usuarios.php` directamente | HTTP 403 | Pendiente en WAMP |
+| AUTH-08 | Vendedor intenta enviar POST para crear/eliminar producto | Solicitud rechazada; inventario no cambia | Pendiente en WAMP |
+| AUTH-09 | Técnico intenta abrir `pages/ventas.php` directamente | HTTP 403 | Pendiente en WAMP |
+| AUTH-10 | Usuario cambia su contraseña desde Mi cuenta | Requiere contraseña actual y mínimo 12 caracteres | Pendiente en WAMP |
+| AUTH-11 | Usuario desactivado intenta continuar con una sesión existente | Sesión invalida y vuelve al login | Pendiente en WAMP |
+| AUTH-12 | Cerrar sesión | La sesión queda destruida; volver a página privada redirige al login | Pendiente en WAMP |
+| DB-01 | Registrar producto como administrador y recargar | Producto persiste en `productos` | Pendiente en WAMP |
+| DB-02 | Registrar venta de 3 unidades | Venta queda guardada y stock disminuye en 3 | Pendiente en WAMP |
+| DB-03 | Intentar vender más de las unidades disponibles | Operación rechazada y ninguna fila nueva de venta | Pendiente en WAMP |
+| DB-04 | Crear servicio como administrador/técnico y cambiar estado | Registro persiste y estado se actualiza | Pendiente en WAMP |
+| SEC-01 | Enviar formulario de cambio de datos sin token CSRF correcto | Solicitud rechazada | Pendiente en WAMP |
+| SEC-02 | Introducir texto con HTML en campos de cliente/observaciones | Salida HTML escapada al mostrar datos | Pendiente en WAMP |
+| OPS-01 | Exportar base en phpMyAdmin | Archivo SQL generado | Pendiente en WAMP |
+| OPS-02 | Restaurar copia en base de pruebas | Se recuperan tablas y registros esperados | Pendiente en WAMP |
 
-## Procedimiento recomendado
-
-1. Iniciar Apache y MySQL/MariaDB en WAMP.
-2. Importar `database/conce_sur.sql` en phpMyAdmin.
-3. Revisar las credenciales en `config/database.php`.
-4. Ejecutar cada caso de la tabla y anotar **Aprobado / Fallido**, fecha y observación.
-5. Usar datos ficticios de prueba. No reemplazar por capturas generadas ni afirmar que se ejecutó una prueba si no se ejecutó.
+## Límites conocidos
+- El primer administrador se crea una sola vez mediante un asistente que deja de funcionar cuando existe cualquier usuario. Si se pierde la contraseña del único administrador, debe restablecerse de forma controlada desde la base local o usando otro administrador.
+- El bloqueo por intentos de login es una limitación básica por sesión, no un control distribuido por IP/cuenta para producción.
+- No existe recuperación de contraseña por correo ni copia de seguridad automática.
+- Los controles deben probarse en el entorno WAMP del estudiante; el análisis estático/sintaxis no sustituye dichas pruebas.

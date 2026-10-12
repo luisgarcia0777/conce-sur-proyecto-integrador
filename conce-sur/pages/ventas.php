@@ -1,12 +1,10 @@
 <?php
-session_start();
-require_once __DIR__ . '/../config/database.php';
-if (empty($_SESSION['csrf_token'])) $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-function h($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
+require_once __DIR__ . '/../includes/auth.php';
+auth_require_roles(['Administrador','Vendedor']);
 $mensaje = ''; $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'] ?? '')) {
+    if (!csrf_valid()) {
         $error = 'La sesión del formulario venció. Recarga la página e inténtalo nuevamente.';
     } else {
         $documento = trim($_POST['documento_cliente'] ?? '');
@@ -36,8 +34,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     throw new RuntimeException('Stock insuficiente. Disponible: ' . (int)$producto['stock'] . ' unidades.');
                 }
                 $total = round($cantidad * (float)$precio, 2);
-                $ins = $pdo->prepare('INSERT INTO ventas (documento_cliente,cliente_nombre,cliente_telefono,producto_id,producto_codigo,producto_nombre,cantidad,precio_unitario,total,forma_pago,contador_copias,observaciones) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)');
-                $ins->execute([$documento !== '' ? $documento : null, $cliente, $telefono !== '' ? $telefono : null, $producto['id'], $producto['codigo'], $producto['nombre'], $cantidad, number_format((float)$precio,2,'.',''), number_format($total,2,'.',''), $formaPago, $contador, $observaciones !== '' ? $observaciones : null]);
+                $ins = $pdo->prepare('INSERT INTO ventas (documento_cliente,cliente_nombre,cliente_telefono,producto_id,producto_codigo,producto_nombre,cantidad,precio_unitario,total,forma_pago,contador_copias,observaciones,id_usuario) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)');
+                $ins->execute([$documento !== '' ? $documento : null, $cliente, $telefono !== '' ? $telefono : null, $producto['id'], $producto['codigo'], $producto['nombre'], $cantidad, number_format((float)$precio,2,'.',''), number_format($total,2,'.',''), $formaPago, $contador, $observaciones !== '' ? $observaciones : null, (int)auth_user()['id_usuario']]);
                 $ventaId = (int)$pdo->lastInsertId();
                 $numero = 'VTA-' . date('Ymd') . '-' . str_pad((string)$ventaId, 5, '0', STR_PAD_LEFT);
                 $updVenta = $pdo->prepare('UPDATE ventas SET numero_venta = ? WHERE id = ?');
@@ -68,8 +66,8 @@ $resumenHoy = $totalHoyStmt->fetch();
 <style>
 body{background:#0b1120;color:#e5e7eb}.main{min-width:0}.topbar p,.muted{color:#9ca3af}.stats{display:flex;gap:12px;flex-wrap:wrap;margin:0 0 18px}.stat{background:#111827;border:1px solid #273449;padding:15px 18px;border-radius:10px;min-width:175px}.stat span{display:block;color:#9ca3af;font-size:12px}.stat strong{font-size:23px;display:block;margin-top:5px}.panel{background:#111827;border:1px solid #273449;border-radius:12px;padding:19px;margin-bottom:18px}.layout{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(260px,1fr);gap:18px}.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.field{display:flex;flex-direction:column;gap:7px}.field.full{grid-column:1/-1}.field label{font-size:12px;color:#cbd5e1}.field input,.field select,.field textarea{width:100%;box-sizing:border-box;background:#0b1120;color:#e5e7eb;border:1px solid #374151;border-radius:7px;padding:11px;font:inherit}.field textarea{min-height:80px}.btn{display:inline-block;border:0;border-radius:8px;padding:11px 15px;font-weight:600;cursor:pointer;text-decoration:none;font-size:13px}.primary{background:#2563eb;color:white}.secondary{background:#263244;color:#e5e7eb}.notice{padding:12px 14px;border-radius:8px;margin-bottom:15px}.success{background:#064e3b;color:#a7f3d0}.error{background:#7f1d1d;color:#fecaca}.summary-row{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #273449;padding:13px 0;color:#cbd5e1}.summary-row.total{font-size:21px;color:white;font-weight:700;border:0}.save{width:100%;margin-top:15px}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:12px;border-bottom:1px solid #273449;white-space:nowrap}th{color:#9ca3af;font-weight:600}.small{font-size:12px;color:#9ca3af;margin-top:10px}@media(max-width:850px){.layout{grid-template-columns:1fr}}@media(max-width:600px){.fields{grid-template-columns:1fr}.field.full{grid-column:auto}}
 </style></head><body><div class="app">
-<aside class="sidebar"><div class="logo"><h1>CONCE SUR</h1><span>Sistema de Gestión</span></div><nav><a href="../index.php">Dashboard</a><a href="inventario.php">Inventario</a><a href="ventas.php" class="active">Ventas</a><a href="#">Clientes</a><a href="servicios.php">Servicios</a><a href="#">Equipos</a></nav><div class="sidebar-bottom"><a href="#">Configuración</a></div></aside>
-<main class="main"><header class="topbar"><div><h2>Nueva venta</h2><p>Registro de operación con descuento automático del inventario</p></div><div class="user"><div class="avatar">A</div><div><strong>Administrador</strong><small>Prototipo local</small></div></div></header>
+<?php auth_render_sidebar('ventas'); ?>
+<main class="main"><header class="topbar"><div><h2>Nueva venta</h2><p>Registro de operación con descuento automático del inventario</p></div><?php auth_render_user_badge(); ?></header>
 <?php if($mensaje):?><div class="notice success"><?=h($mensaje)?></div><?php endif;?><?php if($error):?><div class="notice error"><?=h($error)?></div><?php endif;?>
 <section class="stats"><div class="stat"><span>Ventas registradas hoy</span><strong><?=number_format((int)$resumenHoy['cantidad'])?></strong></div><div class="stat"><span>Importe vendido hoy</span><strong>S/ <?=number_format((float)$resumenHoy['importe'],2)?></strong></div><div class="stat"><span>Productos disponibles para venta</span><strong><?=number_format(count($productos))?></strong></div></section>
 <div class="layout"><section class="panel"><h3 style="margin-bottom:5px">Datos de la venta</h3><p class="muted" style="font-size:13px;margin-bottom:17px">Los campos marcados con * son obligatorios. El sistema valida el stock antes de confirmar.</p>
