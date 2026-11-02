@@ -87,6 +87,7 @@ function auth_render_sidebar(string $active): void {
     $links = [
       ['dashboard','Dashboard','index.php',['Administrador','Vendedor','Tecnico']],
       ['inventario','Inventario','pages/inventario.php',['Administrador','Vendedor']],
+      ['alertas_stock','Alertas de stock','pages/alertas_stock.php',['Administrador','Vendedor']],
       ['ventas','Ventas','pages/ventas.php',['Administrador','Vendedor']],
       ['reportes_ventas','Reportes de ventas','pages/reportes_ventas.php',['Administrador','Vendedor']],
       ['servicios','Servicios','pages/servicios.php',['Administrador','Tecnico']],
