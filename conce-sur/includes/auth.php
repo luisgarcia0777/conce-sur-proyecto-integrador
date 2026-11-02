@@ -88,6 +88,7 @@ function auth_render_sidebar(string $active): void {
       ['dashboard','Dashboard','index.php',['Administrador','Vendedor','Tecnico']],
       ['inventario','Inventario','pages/inventario.php',['Administrador','Vendedor']],
       ['ventas','Ventas','pages/ventas.php',['Administrador','Vendedor']],
+      ['reportes_ventas','Reportes de ventas','pages/reportes_ventas.php',['Administrador','Vendedor']],
       ['servicios','Servicios','pages/servicios.php',['Administrador','Tecnico']],
       ['usuarios','Usuarios','pages/usuarios.php',['Administrador']],
       ['cuenta','Mi cuenta','pages/mi_cuenta.php',['Administrador','Vendedor','Tecnico']],
