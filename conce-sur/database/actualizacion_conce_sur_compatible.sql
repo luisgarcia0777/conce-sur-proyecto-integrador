@@ -285,8 +285,11 @@ SET NEW.id_categoria = COALESCE(NEW.id_categoria,
 DROP TRIGGER IF EXISTS trg_conce_sur_productos_categoria_bu;
 CREATE TRIGGER trg_conce_sur_productos_categoria_bu
 BEFORE UPDATE ON productos FOR EACH ROW
-SET NEW.id_categoria = COALESCE(NEW.id_categoria,
-  (SELECT c.id_categoria FROM categorias c WHERE c.nombre = NEW.tipo LIMIT 1));
+SET NEW.id_categoria = CASE
+  WHEN NEW.tipo <> OLD.tipo OR NEW.id_categoria IS NULL THEN
+    (SELECT c.id_categoria FROM categorias c WHERE c.nombre = NEW.tipo LIMIT 1)
+  ELSE NEW.id_categoria
+END;
 
 -- 13. Sincronizar id_estado a partir del campo ENUM `servicios.estado` existente.
 DROP TRIGGER IF EXISTS trg_conce_sur_servicios_estado_bi;
